@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-04
+
+### Fixed
+
+- `composer-peel`ed release.
+
 ## [0.9.0] - 2026-11-04
 
 ### Added

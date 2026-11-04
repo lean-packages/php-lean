@@ -22,7 +22,7 @@ if (false === $autoloaded) {
 }
 
 \define('WORKING_DIRECTORY', \getcwd());
-\define('VERSION', '0.9.0');
+\define('VERSION', '0.9.1');
 
 use Stolt\Console\Commands\ListSkillsCommand;
 use Stolt\LeanPackage\Analysers\ClassicExportIgnoreAnalyser;
