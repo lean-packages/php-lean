@@ -1,0 +1,97 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Stolt\LeanPackage\Presets;
+
+use Stolt\LeanPackage\Exceptions\PresetNotAvailable;
+use Stolt\LeanPackage\Preset;
+
+class Finder
+{
+    const PRESET_SUFFIX = 'Preset';
+
+    private Preset $defaultPreset;
+
+    public function __construct(Preset $defaultPreset)
+    {
+        $this->defaultPreset = $defaultPreset;
+    }
+
+    /**
+     * @return array
+     */
+    public function getAvailablePresets(): array
+    {
+        $dir = new \DirectoryIterator(\dirname(__FILE__));
+        $availablePresets = [];
+
+        foreach ($dir as $fileinfo) {
+            if ($fileinfo->isDot()) {
+                continue;
+            }
+
+            $presetsParts = \explode(self::PRESET_SUFFIX, $fileinfo->getBasename());
+            if (\count($presetsParts) === 2) {
+                if ($presetsParts[0] === 'Common') {
+                    continue;
+                }
+                $availablePresets[] = $presetsParts[0];
+            }
+        }
+
+        return $availablePresets;
+    }
+
+    /**
+     * @param string $name
+     * @throws PresetNotAvailable
+     * @return array
+     */
+    public function getPresetGlobByLanguageName(string $name): array
+    {
+        $preset = $this->getPresetByLanguageName($name);
+
+        return $this->sortPresetGlob($preset->getPresetGlob());
+    }
+
+    /**
+     * @param string $name
+     * @throws PresetNotAvailable
+     * @return Preset
+     */
+    public function getPresetByLanguageName(string $name): Preset
+    {
+        $name = \ucfirst(\strtolower($name));
+
+        if (!\in_array($name, $this->getAvailablePresets(), strict: true)) {
+            $message = \sprintf('Preset for %s not available. Maybe contribute it!?', $name);
+            throw new PresetNotAvailable($message);
+        }
+
+        $presetClassName = \sprintf('Stolt\LeanPackage\Presets\%sPreset', $name);
+
+        return new $presetClassName();
+    }
+
+    /**
+     * Returns the default Preset glob array
+     *
+     * @return array
+     */
+    public function getDefaultPreset(): array
+    {
+        return $this->sortPresetGlob($this->defaultPreset->getPresetGlob());
+    }
+
+    /**
+     * @param array $presetGlob
+     * @return array
+     */
+    private function sortPresetGlob(array $presetGlob): array
+    {
+        \sort($presetGlob, SORT_STRING | SORT_FLAG_CASE);
+
+        return $presetGlob;
+    }
+}

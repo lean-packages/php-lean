@@ -1,0 +1,145 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Stolt\LeanPackage\Commands;
+
+use Stolt\LeanPackage\Analyser;
+use Stolt\LeanPackage\Analysers\ClassicExportIgnoreAnalyser;
+use Stolt\LeanPackage\Analysers\NegatedExportIgnoreAnalyser;
+use Stolt\LeanPackage\Commands\Concerns\GeneratesGitattributesOptions;
+use Stolt\LeanPackage\Commands\Concerns\OutputOptions;
+use Stolt\LeanPackage\Gitattributes\FileRepository as GitattributesFileRepository;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+use Throwable;
+
+final class CreateCommand extends Command
+{
+    use GeneratesGitattributesOptions;
+    use OutputOptions;
+    protected static string $defaultName = 'create';
+
+    protected static string $defaultDescription = 'Create a new .gitattributes file for a project/micro-package repository';
+
+    public function __construct(
+        private readonly Analyser $analyser,
+        private readonly GitattributesFileRepository $repository
+    ) {
+        parent::__construct();
+    }
+
+    protected function configure(): void
+    {
+        $this
+            ->addArgument(
+                'directory',
+                InputArgument::OPTIONAL,
+                'The package directory to create the .gitattributes file in',
+                \defined('WORKING_DIRECTORY') ? WORKING_DIRECTORY : \getcwd()
+            )->setName(self::$defaultName)->setDescription(self::$defaultDescription);
+
+        // Add common generation options
+        $this->addGenerationOptions(function (...$args) {
+            $this->getDefinition()->addOption(new InputOption(...$args));
+        });
+        $this->addDryRunOutputOption(function (...$args) {
+            $this->getDefinition()->addOption(new InputOption(...$args));
+        }, 'Do not write any files. Output the expected .gitattributes content');
+
+        $this->addOption(
+            'force',
+            null,
+            InputOption::VALUE_NONE,
+            'Force the creation of the .gitattributes file even if one already exists'
+        );
+
+        $flavourDescription = 'Generate the .gitattributes file with the given flavour';
+
+        $this->addOption(
+            'flavour',
+            'f',
+            InputOption::VALUE_OPTIONAL,
+            $flavourDescription,
+            ClassicExportIgnoreAnalyser::EXPORT_IGNORE_CLASSIC
+        );
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $directory = (string) $input->getArgument('directory') ?: \getcwd();
+        $forceCreation = (bool) $input->getOption('force');
+
+        $this->analyser->getActualExportIgnoreAnalyser()->setDirectory($directory);
+
+        $isAgenticRun = $this->isAgenticRun();
+
+        $generationFlavour = $input->getOption('flavour') ?: ClassicExportIgnoreAnalyser::EXPORT_IGNORE_CLASSIC;
+
+        if (!\in_array($generationFlavour, [ClassicExportIgnoreAnalyser::EXPORT_IGNORE_CLASSIC, NegatedExportIgnoreAnalyser::EXPORT_IGNORE_NEGATED], true)) {
+            $output->writeln('<error>Invalid flavour specified. Use <info>classic</info> or <info>negated</info>.</error>');
+            return self::FAILURE;
+        }
+
+        // Apply options that influence generation
+        if (!$this->applyGenerationOptions($input, $output, $this->analyser->getActualExportIgnoreAnalyser(), $this->getName())) {
+            return self::FAILURE;
+        }
+
+        $gitattributesPath = $this->analyser->getActualExportIgnoreAnalyser()->getGitattributesFilePath();
+
+        if (\file_exists($gitattributesPath) && $forceCreation === false && $this->isDryRun($input) !== true) {
+            $message = 'A .gitattributes file already exists. Use the update command to modify it.';
+            if ($isAgenticRun) {
+                $this->writeAgenticOutput($output, $this->getName(), false, $message);
+            } else {
+                $output->writeln($message);
+            }
+            return self::FAILURE;
+        }
+
+        $expected = $this->analyser->getExpectedGitattributesContent([], $generationFlavour);
+
+        if ($expected === '') {
+            $message = 'Unable to determine expected .gitattributes content for the given directory.';
+            if ($isAgenticRun) {
+                $this->writeAgenticOutput($output, $this->getName(), false, $message);
+            } else {
+                $output->writeln($message);
+            }
+            return self::FAILURE;
+        }
+
+        if ($this->isDryRun($input)) {
+            $output->writeln($expected);
+
+            return self::SUCCESS;
+        }
+
+        try {
+            $this->repository->createGitattributesFile($expected);
+        } catch (Throwable $e) {
+            $message = 'Creation of .gitattributes file failed.';
+            if ($isAgenticRun) {
+                $this->writeAgenticOutput($output, $this->getName(), false, $message);
+            } else {
+                $output->writeln($message);
+            }
+            return self::FAILURE;
+        }
+
+        $directory = \realpath($directory);
+        $message = "A .gitattributes file has been created in {$directory}.";
+
+        if ($isAgenticRun) {
+            $this->writeAgenticOutput($output, $this->getName(), true, $message, ['gitattributes_file_path' => $gitattributesPath]);
+        } else {
+            $output->writeln($message);
+        }
+
+        return self::SUCCESS;
+    }
+}

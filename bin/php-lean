@@ -1,0 +1,90 @@
+#!/usr/bin/env php
+
+<?php
+
+$autoloaded = false;
+$autoloads = [
+    __DIR__ . '/../../../autoload.php',
+    __DIR__ . '/../vendor/autoload.php',
+    __DIR__ . '/vendor/autoload.php',
+];
+
+foreach (\array_filter($autoloads, 'file_exists') as $autoload) {
+    require $autoload;
+    $autoloaded = true;
+    break;
+}
+
+if (false === $autoloaded) {
+   echo('You need to set up the project dependencies by running the following command:' . PHP_EOL .
+       '> composer install' . PHP_EOL);
+   exit(1);
+}
+
+\define('WORKING_DIRECTORY', \getcwd());
+\define('VERSION', '6.5.0');
+
+use Stolt\Console\Commands\ListSkillsCommand;
+use Stolt\LeanPackage\Analysers\ClassicExportIgnoreAnalyser;
+use Stolt\LeanPackage\Commands\CreateCommand;
+use Stolt\LeanPackage\Commands\InitCommand;
+use Stolt\LeanPackage\Commands\ReformatCommand;
+use Stolt\LeanPackage\Commands\RefreshCommand;
+use Stolt\LeanPackage\Commands\TreeCommand;
+use Stolt\LeanPackage\Commands\UpdateCommand;
+use Stolt\LeanPackage\Commands\ValidateCommand;
+use Stolt\LeanPackage\Commands\ValidateRemoteCommand;
+use Stolt\LeanPackage\Analyser;
+use Stolt\LeanPackage\Archive;
+use Stolt\LeanPackage\Archive\Validator;
+use Stolt\LeanPackage\ImpactReport;
+use Stolt\LeanPackage\Gitattributes\FileRepository as GitattributesFileRepository;
+use Stolt\LeanPackage\Git\GitRepositoryCloner;
+use Stolt\LeanPackage\Helpers\PhpInputReader;
+use Stolt\LeanPackage\Presets\Finder;
+use Stolt\LeanPackage\Presets\PhpPreset;
+use Stolt\LeanPackage\Tree;
+use Symfony\Component\Console\Application;
+
+$finder = new Finder(new PhpPreset());
+$archive = new Archive(WORKING_DIRECTORY);
+$gitattributesFileRepository = new GitattributesFileRepository(WORKING_DIRECTORY);
+$analyser = new Analyser(new ClassicExportIgnoreAnalyser($finder, $gitattributesFileRepository));
+
+$initCommand = new InitCommand(
+    $analyser
+);
+
+$refreshCommand = new RefreshCommand(
+    $analyser
+);
+
+$validateCommand = new ValidateCommand(
+    $analyser,
+    new Validator($archive),
+    new PhpInputReader(),
+    $gitattributesFileRepository,
+    new ImpactReport(WORKING_DIRECTORY)
+);
+$createCommand = new CreateCommand($analyser, $gitattributesFileRepository);
+$updateCommand = new UpdateCommand($analyser, $gitattributesFileRepository);
+$validateRemoteCommand = new ValidateRemoteCommand($analyser, $gitattributesFileRepository, new GitRepositoryCloner());
+$reformatCommand = new ReformatCommand($analyser, $gitattributesFileRepository);
+$treeCommand = new TreeCommand(new Tree(new Archive(WORKING_DIRECTORY,'tree-temp')));
+$listSkillsCommand = new ListSkillsCommand();
+
+$application = new Application('Lean package validator', VERSION);
+
+$application->addCommands([
+    $initCommand,
+    $refreshCommand,
+    $validateCommand,
+    $validateRemoteCommand,
+    $createCommand,
+    $updateCommand,
+    $reformatCommand,
+    $treeCommand,
+    $listSkillsCommand
+]);
+
+$application->run();

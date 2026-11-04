@@ -1,0 +1,24 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    ignoreErrors:
+        - identifier: missingType.iterableValue
+        - identifier: argument.type
+        - identifier: identical.alwaysTrue
+        - identifier: method.alreadyNarrowedType
+        - '#Constant WORKING_DIRECTORY not found.#'
+        - '#Mockery\\MockInterface#'
+        - '#Mockery\\LegacyMockInterface#'
+        - '#Mockery\\ExpectationInterface#'
+        - '#array_filter#'
+        - '#is never read#'
+        - '#TMock#'
+        - '#unknown class#'
+        - '#set_error_handler expects#'
+        - '#getPresetByLanguageName#'
+        - '#null might not exist on string#'
+        - '#str_contains\(\) with string and#'

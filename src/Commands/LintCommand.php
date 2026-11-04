@@ -1,0 +1,714 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Stolt\LeanPackage\Commands;
+
+use SebastianBergmann\Diff\Differ;
+use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
+use SplFileInfo;
+use Stolt\LeanPackage\Analyser;
+use Stolt\LeanPackage\Analysers\AbstractExportIgnoreAnalyser;
+use Stolt\LeanPackage\Archive\Validator;
+use Stolt\LeanPackage\Commands\Concerns\GeneratesGitattributesOptions;
+use Stolt\LeanPackage\Commands\Concerns\OutputOptions;
+use Stolt\LeanPackage\Exceptions\GitArchiveNotValidatedYet;
+use Stolt\LeanPackage\Exceptions\GitHeadNotAvailable;
+use Stolt\LeanPackage\Exceptions\GitNotAvailable;
+use Stolt\LeanPackage\Exceptions\InvalidGlobPattern;
+use Stolt\LeanPackage\Exceptions\InvalidGlobPatternFile;
+use Stolt\LeanPackage\Exceptions\NoLicenseFilePresent;
+use Stolt\LeanPackage\Exceptions\NonExistentGlobPatternFile;
+use Stolt\LeanPackage\Exceptions\PresetNotAvailable;
+use Stolt\LeanPackage\Gitattributes\FileRepository as GitattributesFileRepository;
+use Stolt\LeanPackage\Helpers\InputReaderInterface;
+use Stolt\LeanPackage\ImpactReport;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
+
+final class LintCommand extends Command
+{
+    use GeneratesGitattributesOptions;
+    use OutputOptions;
+
+    /**
+     * Default glob pattern file.
+     *
+     * @var string
+     */
+    protected string $defaultLpvFile = '';
+
+    protected string $defaultPreset = 'Php';
+
+    protected AbstractExportIgnoreAnalyser $exportIgnoreAnalyser;
+
+    /**
+     * @param Analyser $analyser
+     * @param Validator $archiveValidator
+     * @param InputReaderInterface $inputReader
+     * @param GitattributesFileRepository $gitattributesFileRepository
+     * @param ImpactReport|null $impactReport
+     */
+    public function __construct(
+        private readonly Analyser $analyser,
+        private readonly Validator $archiveValidator,
+        private readonly InputReaderInterface $inputReader,
+        private readonly GitattributesFileRepository $gitattributesFileRepository,
+        private readonly ?ImpactReport $impactReport = null
+    ) {
+        $this->exportIgnoreAnalyser = $analyser->getActualExportIgnoreAnalyser();
+        $this->defaultLpvFile = \getcwd() . DIRECTORY_SEPARATOR . '.lpv';
+
+        parent::__construct();
+    }
+
+    /**
+     * Command configuration.
+     *
+     * @return void
+     */
+    protected function configure(): void
+    {
+        $this->exportIgnoreAnalyser->setDirectory(\getcwd());
+        $this->setName('lint');
+        $description = 'Lint the .gitattributes file of a given project/micro-package repository';
+        $this->setDescription($description);
+
+        $directoryDescription = 'The directory of a project/micro-package repository';
+
+        $this->addArgument(
+            'directory',
+            InputArgument::OPTIONAL,
+            $directoryDescription,
+            $this->exportIgnoreAnalyser->getDirectory()
+        );
+
+        $enforceStrictOrderDescription = 'Enforce a strict order comparison of '
+            . 'export-ignores in the .gitattributes file';
+        $enforceExportIgnoreAlignmentDescription = 'Enforce a strict alignment of '
+            . 'export-ignores in the .gitattributes file';
+        $validateArchiveDescription = 'Validate Git archive against current HEAD';
+        $diffDescription = 'Show difference between expected and actual .gitattributes content';
+        $reportStaleExportIgnoresDescription = 'Filter stale export-ignores referencing non existent artifacts. Requires --diff option to be set';
+        $reportImpactDescription = 'Display the distribution impact report showing archive size reduction and estimated CO₂ savings';
+
+        $exampleGlobPattern = '{.*,*.md}';
+        $globPatternDescription = 'Use this glob pattern e.g. <comment>'
+            . $exampleGlobPattern . '</comment> to match artefacts which should be '
+            . 'export-ignored';
+        $globPatternFileDescription = 'Use this file with glob patterns '
+            . 'to match artifacts which should be export-ignored';
+        $presetDescription = 'Use the glob pattern of the given language preset';
+
+        $keepLicenseDescription = 'Do not export-ignore the license file';
+        $keepReadmeDescription = 'Do not export-ignore the README file';
+        $keepGlobPatternDescription = 'Do not export-ignore matching glob pattern e.g. <comment>{LICENSE.*,README.*,docs*}</comment>';
+        $sortDescription = 'Sort from directories to files';
+
+        $stdinInputDescription = "Read .gitattributes content from standard input";
+
+        $this->addOption('stdin-input', null, InputOption::VALUE_NONE, $stdinInputDescription);
+        $this->addOption(
+            'enforce-strict-order',
+            null,
+            InputOption::VALUE_NONE,
+            $enforceStrictOrderDescription
+        );
+        $this->addOption(
+            'enforce-alignment',
+            null,
+            InputOption::VALUE_NONE,
+            $enforceExportIgnoreAlignmentDescription
+        );
+
+        $this->addOption(
+            'validate-git-archive',
+            null,
+            InputOption::VALUE_NONE,
+            $validateArchiveDescription
+        );
+        $this->addOption(
+            'glob-pattern',
+            null,
+            InputOption::VALUE_REQUIRED,
+            $globPatternDescription
+        );
+        $this->addOption(
+            'glob-pattern-file',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            $globPatternFileDescription,
+            $this->defaultLpvFile
+        );
+        $this->addOption(
+            'preset',
+            null,
+            InputOption::VALUE_OPTIONAL,
+            $presetDescription,
+            $this->defaultPreset
+        );
+        $this->addOption(
+            'keep-license',
+            null,
+            InputOption::VALUE_NONE,
+            $keepLicenseDescription
+        );
+        $this->addOption(
+            'keep-readme',
+            null,
+            InputOption::VALUE_NONE,
+            $keepReadmeDescription
+        );
+        $this->addOption(
+            'keep-glob-pattern',
+            null,
+            InputOption::VALUE_NONE,
+            $keepGlobPatternDescription
+        );
+        $this->addOption(
+            'sort-from-directories-to-files',
+            's',
+            InputOption::VALUE_NONE,
+            $sortDescription
+        );
+        $this->addOption(
+            'diff',
+            null,
+            InputOption::VALUE_NONE,
+            $diffDescription
+        );
+        $this->addOption(
+            'report-stale-export-ignores',
+            null,
+            InputOption::VALUE_NONE,
+            $reportStaleExportIgnoresDescription
+        );
+        $this->addOption(
+            'report-impact',
+            null,
+            InputOption::VALUE_NONE,
+            $reportImpactDescription
+        );
+    }
+
+    /**
+     * Execute command.
+     *
+     * @param InputInterface $input
+     * @param OutputInterface $output
+     *
+     * @throws GitArchiveNotValidatedYet
+     * @throws GitHeadNotAvailable
+     * @throws GitNotAvailable
+     * @return integer
+     */
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $directory = (string) $input->getArgument('directory');
+        $chosenPreset = (string) $input->getOption('preset');
+        $isAgenticRun = $this->isAgenticRun();
+
+        if ($directory !== \getcwd()) {
+            try {
+                $this->exportIgnoreAnalyser->setDirectory($directory);
+            } catch (\RuntimeException $e) {
+                $warning = "Warning: The provided directory "
+                    . "'{$directory}' does not exist or is not a directory.";
+                if ($isAgenticRun) {
+                    $this->writeAgenticOutput($output, $this->getName(), false, $warning);
+                } else {
+                    $output->writeln('<error>' . $warning . '</error>');
+                }
+
+                $output->writeln($e->getMessage(), OutputInterface::VERBOSITY_DEBUG);
+
+                return Command::FAILURE;
+            }
+        }
+
+        $stdinInput = $input->getOption('stdin-input');
+
+        if ($stdinInput !== false) {
+            $stdinInputContents = \trim($this->inputReader->get());
+
+            if (!\strpos($stdinInputContents, 'export-ignore')) {
+                $warning = "Warning: The provided input stream seems to be no .gitattributes content.";
+                if ($isAgenticRun) {
+                    $this->writeAgenticOutput($output, $this->getName(), false, $warning);
+                } else {
+                    $output->writeln('<error>' . $warning . '</error>');
+                }
+                return Command::FAILURE;
+            }
+
+            // Apply generation-related options (e.g. --enforce-strict-order, --enforce-alignment, keep-*)
+            if (!$this->applyGenerationOptions($input, $output, $this->exportIgnoreAnalyser, $this->getName())) {
+                return Command::FAILURE;
+            }
+
+            $verboseOutput = '+ Validating .gitattributes content from STDIN.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            if ($this->analyser->hasCompleteExportIgnoresFromString($stdinInputContents)) {
+                if ($isAgenticRun) {
+                    $this->writeAgenticOutput($output, $this->getName(), true, 'The provided .gitattributes content is considered valid.', ['valid' => true]);
+                } else {
+                    $output->writeln('The provided .gitattributes content is considered <info>valid</info>.');
+                }
+                return Command::SUCCESS;
+            }
+
+            if ($isAgenticRun) {
+                $this->writeAgenticOutput($output, $this->getName(), false, 'The provided .gitattributes content is considered invalid.', ['valid' => false]);
+            } else {
+                $output->writeln('The provided .gitattributes file is considered <error>invalid</error>.');
+            }
+            return Command::FAILURE;
+        }
+
+        $verboseOutput = '+ Scanning directory ' . \realpath($directory) . '.';
+        $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+        // Apply shared generation-related options via the trait (glob/preset/keep/alignment/order)
+        if (!$this->applyGenerationOptions($input, $output, $this->exportIgnoreAnalyser, $this->getName())) {
+            return Command::FAILURE;
+        }
+
+        $validateArchive = $input->getOption('validate-git-archive');
+        $globPattern = $input->getOption('glob-pattern');
+        $globPatternFile = (string) $input->getOption('glob-pattern-file');
+        $showDifference = $input->getOption('diff');
+        $reportStaleExportIgnores = $input->getOption('report-stale-export-ignores');
+        $reportImpact = $input->getOption('report-impact');
+
+        // Handle --report-impact option
+        if ($reportImpact) {
+            $verboseOutput = '+ Generating distribution impact report.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $impactReport = $this->impactReport ?? new ImpactReport($directory);
+
+            try {
+                $impactReport->createOriginalArchive();
+                $impactReport->createOptimizedArchive();
+                $output->writeln('');
+                $output->writeln($impactReport->generateReport());
+                $impactReport->removeArchives();
+            } catch (GitNotAvailable $e) {
+                $output->writeln('<error>' . $e->getMessage() . '</error>');
+                $impactReport->removeArchives();
+                return Command::FAILURE;
+            } catch (GitHeadNotAvailable $e) {
+                $output->writeln('<error>' . $e->getMessage() . '</error>');
+                $impactReport->removeArchives();
+                return Command::FAILURE;
+            }
+
+            return Command::SUCCESS;
+        }
+
+        $enforceStrictOrderComparison = $input->getOption('enforce-strict-order');
+        $sortFromDirectoriesToFiles = $input->getOption('sort-from-directories-to-files');
+
+        if ($enforceStrictOrderComparison && $sortFromDirectoriesToFiles === false) {
+            $verboseOutput = '+ Enforcing strict order comparison.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $this->exportIgnoreAnalyser->enableStrictOrderComparison();
+        }
+
+        if ($sortFromDirectoriesToFiles) {
+            $verboseOutput = '+ Sorting from files to directories.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $this->exportIgnoreAnalyser->sortFromDirectoriesToFiles();
+        }
+
+        if ($reportStaleExportIgnores) {
+            $verboseOutput = '+ Enforcing stale export ignores comparison.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $this->exportIgnoreAnalyser->enableStaleExportIgnoresComparison();
+        }
+
+        $enforceExportIgnoresAlignment = $input->getOption('enforce-alignment');
+
+        if ($enforceExportIgnoresAlignment) {
+            $verboseOutput = '+ Enforcing alignment comparison.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $this->exportIgnoreAnalyser->enableStrictAlignmentComparison();
+        }
+
+        $keepLicense = (bool) $input->getOption('keep-license');
+
+        if ($keepLicense) {
+            $verboseOutput = '+ Keeping the license file.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $this->exportIgnoreAnalyser->keepLicense();
+        } elseif ($this->exportIgnoreAnalyser->isKeepLicenseEnabled()) {
+            $verboseOutput = '+ Keeping the license file. (MIT license auto-detected)';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+        }
+
+        $keepReadme = (bool) $input->getOption('keep-readme');
+
+        if ($keepReadme) {
+            $verboseOutput = '+ Keeping the README file.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $this->exportIgnoreAnalyser->keepReadme();
+        }
+
+        $keepGlobPattern = (string) $input->getOption('keep-glob-pattern');
+
+        if ($keepGlobPattern !== '') {
+            $verboseOutput = \sprintf('+ Keeping files matching the glob pattern <info>%s</info>.', $keepGlobPattern);
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+            try {
+                $this->exportIgnoreAnalyser->setKeepGlobPattern($keepGlobPattern);
+            } catch (InvalidGlobPattern $e) {
+                $warning = "Warning: The provided glob pattern "
+                    . "'{$keepGlobPattern}' is considered invalid.";
+                $outputContent = '<error>' . $warning . '</error>';
+                $output->writeln($outputContent);
+
+                $output->writeln($e->getMessage(), OutputInterface::VERBOSITY_DEBUG);
+
+                return Command::FAILURE;
+            }
+        }
+
+        if ($globPattern || $globPattern === '') {
+            try {
+                $verboseOutput = "+ Using glob pattern <info>{$globPattern}</info>.";
+                $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+                $this->exportIgnoreAnalyser->setGlobPattern((string) $globPattern);
+            } catch (InvalidGlobPattern $e) {
+                $warning = "Warning: The provided glob pattern "
+                    . "'{$globPattern}' is considered invalid.";
+                $outputContent = '<error>' . $warning . '</error>';
+                $output->writeln($outputContent);
+
+                $output->writeln($e->getMessage(), OutputInterface::VERBOSITY_DEBUG);
+
+                return Command::FAILURE;
+            }
+        } elseif ($this->isGlobPatternFileSettable($globPatternFile)) {
+            try {
+                if ($this->isDefaultGlobPatternFilePresent()) {
+                    $this->exportIgnoreAnalyser->setGlobPatternFromFile($globPatternFile);
+                }
+                if ($globPatternFile) {
+                    $globPatternFileInfo = new SplFileInfo($globPatternFile);
+                    $verboseOutput = '+ Using ' . $globPatternFileInfo->getBasename() . ' file as glob pattern input.';
+                    $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+                    $this->exportIgnoreAnalyser->setGlobPatternFromFile($globPatternFile);
+                }
+
+            } catch (NonExistentGlobPatternFile $e) {
+                $warning = "Warning: The provided glob pattern file "
+                    . "'{$globPatternFile}' doesn't exist.";
+                $outputContent = '<error>' . $warning . '</error>';
+                $output->writeln($outputContent);
+
+                $output->writeln($e->getMessage(), OutputInterface::VERBOSITY_DEBUG);
+
+                return Command::FAILURE;
+            } catch (InvalidGlobPatternFile $e) {
+                $warning = "Warning: The provided glob pattern file "
+                    . "'{$globPatternFile}' is considered invalid.";
+                $outputContent = '<error>' . $warning . '</error>';
+                $output->writeln($outputContent);
+
+                $output->writeln($e->getMessage(), OutputInterface::VERBOSITY_DEBUG);
+
+                return Command::FAILURE;
+            }
+        } elseif ($chosenPreset) {
+            try {
+                $this->exportIgnoreAnalyser->setGlobPatternFromPreset($chosenPreset);
+            } catch (PresetNotAvailable $e) {
+                $warning = 'Warning: The chosen language preset ' . $chosenPreset . ' is not available. Maybe contribute it!?';
+                $outputContent = '<error>' . $warning . '</error>';
+                $output->writeln($outputContent);
+
+                return Command::FAILURE;
+            }
+        }
+
+        $verboseOutput = '+ Checking .gitattributes file existence in ' . \realpath($directory) . '.';
+        $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+        $outputContent = '';
+
+        if (!$this->exportIgnoreAnalyser->hasGitattributesFile()) {
+            $warning = 'Warning: There is no .gitattributes file present in '
+                . $this->exportIgnoreAnalyser->getDirectory() . '.';
+            if (!$isAgenticRun) {
+                $output->write('<error>' . $warning . '</error>');
+            }
+
+            $verboseOutput = '+ Getting expected .gitattributes file content.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $expectedGitattributesFileContent = $this->analyser->getExpectedGitattributesContent();
+
+            if ($expectedGitattributesFileContent !== '') {
+                $verboseOutput = '+ Suggesting .gitattributes file content.';
+                $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+                if ($isAgenticRun) {
+                    $warningMessage = 'Warning: There is no .gitattributes file present in ' . $this->exportIgnoreAnalyser->getDirectory() . '.';
+                    $this->writeAgenticOutput(
+                        $output,
+                        $this->getName(),
+                        false,
+                        $warningMessage,
+                        ['valid' => false, 'expected_gitattributes_content' => $expectedGitattributesFileContent]
+                    );
+                } else {
+                    $outputContent .= $this->getSuggestGitattributesFileCreationOptionOutput(
+                        $expectedGitattributesFileContent
+                    );
+                    $output->writeln($outputContent);
+                }
+
+                return Command::FAILURE;
+            }
+
+            if ($isAgenticRun) {
+                $this->writeAgenticOutput($output, $this->getName(), false, 'Unable to resolve expected .gitattributes content.');
+            } else {
+                $outputContent .= PHP_EOL . PHP_EOL . '<info>Unable to resolve expected .gitattributes '
+                    . 'content.</info>';
+                $output->writeln($outputContent);
+            }
+
+            return Command::FAILURE;
+        } elseif ($validateArchive) {
+            try {
+                $verboseOutput = '+ Validating Git archive.';
+                $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+                if ($this->isValidArchive($this->exportIgnoreAnalyser->isKeepLicenseEnabled())) {
+                    if ($isAgenticRun) {
+                        $this->writeAgenticOutput($output, $this->getName(), true, 'The archive file of the current HEAD is considered lean.', ['archive_valid' => true]);
+                    } else {
+                        $output->writeln('<info>The archive file of the current HEAD is considered lean.</info>');
+                    }
+                    return Command::SUCCESS;
+                }
+
+                $foundUnexpectedArchiveArtifacts = $this->archiveValidator->getFoundUnexpectedArchiveArtifacts();
+
+                if ($isAgenticRun) {
+                    $this->writeAgenticOutput($output, $this->getName(), false, 'The archive file of the current HEAD is not considered lean.', ['archive_valid' => false, 'unexpected_artifacts' => $foundUnexpectedArchiveArtifacts]);
+                    return Command::FAILURE;
+                }
+
+                $artifactLabel = \count($foundUnexpectedArchiveArtifacts) === 1 ? 'artifact' : 'artifacts';
+                $info = '<error>The archive file of the current HEAD is not considered lean.</error>'
+                    . PHP_EOL . PHP_EOL . "Seems like the following {$artifactLabel} slipped in:<info>" . PHP_EOL
+                    . \implode(PHP_EOL, $foundUnexpectedArchiveArtifacts) . '</info>' . PHP_EOL;
+            } catch (NoLicenseFilePresent $e) {
+                $errorMessage = 'The archive file of the current HEAD '
+                    . 'is considered invalid due to a missing license file.';
+
+                $output->writeln($e->getMessage(), OutputInterface::VERBOSITY_DEBUG);
+                $this->archiveValidator->getArchive()->removeArchive();
+
+                if ($isAgenticRun) {
+                    $this->writeAgenticOutput($output, $this->getName(), false, $errorMessage);
+                    return Command::FAILURE;
+                }
+
+                $info = '<error>' . $errorMessage . '</error>' . PHP_EOL;
+            }
+
+            $output->writeln($info);
+
+            return Command::FAILURE;
+        } else {
+            $verboseOutput = '+ Analysing the .gitattributes content.';
+            $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+            $this->analyser->getActualExportIgnoreAnalyser()->setDirectory($directory);
+
+            if ($this->analyser->hasCompleteExportIgnores() === false) {
+                if ($this->analyser->usesNegatedExportIgnoreStrategy()) {
+                    $message = 'The present .gitattributes file with negated export-ignore directives is considered <error>invalid</error>.';
+                    if ($isAgenticRun) {
+                        $this->writeAgenticOutput($output, $this->getName(), false, \strip_tags($message), ['valid' => false]);
+                    } else {
+                        $output->writeln($message);
+                    }
+                    return Command::FAILURE;
+                }
+
+                $verboseOutput = "+ Gathering expected .gitattributes content.";
+                $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+
+                $expectedGitattributesFileContent = $this->analyser->getExpectedGitattributesContent();
+
+                if ($expectedGitattributesFileContent === $this->analyser->getActualGitattributesContent()) {
+                    $output->writeln('The present .gitattributes file is considered <info>valid</info>.');
+                    return Command::SUCCESS;
+                }
+
+                if ($showDifference) {
+                    $actual = $this->exportIgnoreAnalyser->getPresentGitAttributesContent();
+                    $builder = new StrictUnifiedDiffOutputBuilder([
+                        'fromFile' => 'Original',
+                        'toFile' => 'Expected',
+                    ]);
+                    $differ = new Differ($builder);
+                    $expectedGitattributesFileContent = $differ->diff($actual, $expectedGitattributesFileContent);
+                }
+
+                if ($isAgenticRun) {
+                    $this->writeAgenticOutput($output, $this->getName(), false, 'The present .gitattributes file is considered invalid.', ['valid' => false, 'expected_gitattributes_content' => $expectedGitattributesFileContent]);
+                } else {
+                    $outputContent = 'The present .gitattributes file is considered <error>invalid</error>.';
+                    $outputContent .= $this->getExpectedGitattributesFileContentOutput(
+                        $expectedGitattributesFileContent
+                    );
+                    $output->writeln($outputContent);
+                }
+
+                return Command::FAILURE;
+            }
+
+            $validationWarnings = [];
+
+            if ($this->exportIgnoreAnalyser->hasPrecedingSlashesInExportIgnorePattern()) {
+                $verboseOutput = '+ Checking for preceding slashes in export-ignore statements.';
+                $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+                $validationWarnings[] = "Warning: At least one export-ignore pattern has a leading '/', which is considered as a smell.";
+            }
+
+            if ($this->exportIgnoreAnalyser->hasTextAutoconfiguration() === false) {
+                $verboseOutput = '+ Checking for text auto configuration.';
+                $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
+                $validationWarnings[] = 'Warning: Missing a text auto configuration. Consider adding one.';
+            }
+
+            if ($isAgenticRun) {
+                $extra = ['valid' => true];
+                if ($validationWarnings !== []) {
+                    $extra['warnings'] = $validationWarnings;
+                }
+                $this->writeAgenticOutput(
+                    $output,
+                    $this->getName(),
+                    true,
+                    'The present .gitattributes file is considered valid.',
+                    $extra
+                );
+            } else {
+                $output->writeln('The present .gitattributes file is considered <info>valid</info>.');
+                foreach ($validationWarnings as $warning) {
+                    $output->writeln('<error>' . $warning . '</error>');
+                }
+            }
+
+            return Command::SUCCESS;
+        }
+    }
+
+    /**
+     * Check if a glob pattern file is settable.
+     *
+     * @param string $file The glob pattern file to check.
+     * @return boolean
+     */
+    protected function isGlobPatternFileSettable(string $file): bool
+    {
+        if ($this->isGlobPatternFileProvided($file)) {
+            return true;
+        }
+
+        return $this->isDefaultGlobPatternFilePresent();
+    }
+
+    /**
+     * Check if a glob pattern file was provided.
+     *
+     * @param string $file The glob pattern file provided.
+     * @return boolean
+     */
+    protected function isGlobPatternFileProvided(string $file): bool
+    {
+        return $file !== $this->defaultLpvFile;
+    }
+
+    /**
+     * Check if a default glob pattern file (.lpv) is present.
+     *
+     * @return boolean
+     */
+    protected function isDefaultGlobPatternFilePresent(): bool
+    {
+        return \file_exists($this->defaultLpvFile);
+    }
+
+    /**
+     * Validate archive of current Git HEAD.
+     *
+     * @param boolean $validateLicenseFilePresence Whether the archive should have a license file or not.
+     * @throws GitNotAvailable|NoLicenseFilePresent
+     * @throws GitHeadNotAvailable
+     * @return boolean
+     */
+    protected function isValidArchive(bool $validateLicenseFilePresence = false): bool
+    {
+        if ($validateLicenseFilePresence) {
+            return $this->archiveValidator->shouldHaveLicenseFile()->validate(
+                $this->exportIgnoreAnalyser->collectExpectedExportIgnores()
+            );
+        }
+
+        return $this->archiveValidator->validate(
+            $this->exportIgnoreAnalyser->collectExpectedExportIgnores()
+        );
+    }
+
+    /**
+     * Get expected gitattributes file content output content.
+     *
+     * @param string $expectedGitattributesFileContent
+     *
+     * @return string
+     */
+    protected function getExpectedGitattributesFileContentOutput(
+        string $expectedGitattributesFileContent
+    ): string {
+        $content = 'Would expect the following .gitattributes file content:' . PHP_EOL
+            . '<info>' . $expectedGitattributesFileContent . '</info>';
+
+        return \str_repeat(PHP_EOL, 2) . $content;
+    }
+
+    /**
+     * Get suggest gitattributes file creation output content.
+     *
+     * @param string $expectedGitattributesFileContent
+     *
+     * @return string
+     */
+    protected function getSuggestGitattributesFileCreationOptionOutput(
+        string $expectedGitattributesFileContent
+    ): string {
+        $content = 'Would expect the following .gitattributes file content:' . PHP_EOL
+            . '<info>' . $expectedGitattributesFileContent . '</info>' . PHP_EOL
+            . 'Use the <info>create</info> command to create a '
+            . '.gitattributes file with the shown content.';
+
+        return PHP_EOL . PHP_EOL . $content;
+    }
+}
