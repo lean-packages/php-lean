@@ -20,7 +20,7 @@ final class ApplicationTest extends PHPUnit
         \exec($binaryCommand, $output, $returnValue);
 
         $this->assertStringStartsWith(
-            'Lean package validator',
+            'php-lean',
             $output[1],
             'Expected application name not present.'
         );
