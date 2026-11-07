@@ -6,6 +6,7 @@ composer.json -export-ignore
 bin/          -export-ignore
 bin/php-lean  -export-ignore
 LICENSE.md    -export-ignore
+README.md     -export-ignore
 resources/    -export-ignore
 resources/**  -export-ignore
 src/          -export-ignore

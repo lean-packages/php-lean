@@ -421,7 +421,6 @@ CONTENT;
 .styleci.yml export-ignore
 .travis.yml export-ignore
 phpunit.xml export-ignore
-README.md export-ignore
 CONTENT;
 
         $this->createTemporaryGitattributesFile($gitattributesContent);
@@ -437,7 +436,6 @@ CONTENT;
 .gitignore       export-ignore
 phpunit.xml.dist export-ignore
 pint.json        export-ignore
-README.md        export-ignore
 tests/           export-ignore
 CONTENT;
 

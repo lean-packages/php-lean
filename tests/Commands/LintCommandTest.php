@@ -264,7 +264,6 @@ package-lock.json        export-ignore
 package.json             export-ignore
 phpstan.neon             export-ignore
 phpunit.xml              export-ignore
-README.md                export-ignore
 sonar-project.properties export-ignore
 tests/                   export-ignore
 
@@ -347,7 +346,6 @@ Would expect the following .gitattributes file content:
 .travis.yml      export-ignore
 CHANGELOG.md     export-ignore
 phpunit.xml      export-ignore
-README.md        export-ignore
 tests/           export-ignore
 
 CONTENT;
@@ -545,7 +543,6 @@ CONTENT;
         $commandTester->execute([
             'command' => $command->getName(),
             'directory' => $this->temporaryDirectory,
-            '--keep-readme' => true,
         ]);
 
         $expectedDisplay = <<<CONTENT
@@ -588,7 +585,6 @@ CONTENT;
         $commandTester->execute([
             'command' => $command->getName(),
             'directory' => $this->temporaryDirectory,
-            '--keep-readme' => true,
             '--keep-license' => true,
         ]);
 

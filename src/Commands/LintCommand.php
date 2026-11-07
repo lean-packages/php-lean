@@ -104,8 +104,7 @@ final class LintCommand extends Command
         $presetDescription = 'Use the glob pattern of the given language preset';
 
         $keepLicenseDescription = 'Do not export-ignore the license file';
-        $keepReadmeDescription = 'Do not export-ignore the README file';
-        $keepGlobPatternDescription = 'Do not export-ignore matching glob pattern e.g. <comment>{LICENSE.*,README.*,docs*}</comment>';
+        $keepGlobPatternDescription = 'Do not export-ignore matching glob pattern e.g. <comment>{LICENSE.*,docs*}</comment>';
         $sortDescription = 'Sort from directories to files';
 
         $stdinInputDescription = "Read .gitattributes content from standard input";
@@ -155,12 +154,6 @@ final class LintCommand extends Command
             null,
             InputOption::VALUE_NONE,
             $keepLicenseDescription
-        );
-        $this->addOption(
-            'keep-readme',
-            null,
-            InputOption::VALUE_NONE,
-            $keepReadmeDescription
         );
         $this->addOption(
             'keep-glob-pattern',
@@ -355,13 +348,9 @@ final class LintCommand extends Command
             $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
         }
 
-        $keepReadme = (bool) $input->getOption('keep-readme');
-
-        if ($keepReadme) {
+        if ($this->exportIgnoreAnalyser->isKeepReadmeEnabled()) {
             $verboseOutput = '+ Keeping the README file.';
             $output->writeln($verboseOutput, OutputInterface::VERBOSITY_VERBOSE);
-
-            $this->exportIgnoreAnalyser->keepReadme();
         }
 
         $keepGlobPattern = (string) $input->getOption('keep-glob-pattern');

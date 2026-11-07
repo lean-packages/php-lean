@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+### Changed
+
+- __README.md is now always kept__ in distribution archives by default. The `--keep-readme` option has been removed, as 
+README files are essential for package documentation and should always be included.
+
 ## [0.9.1] - 2026-11-04
 
 ### Fixed

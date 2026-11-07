@@ -159,7 +159,6 @@ CONTENT;
             ->addArgument($this->temporaryDirectory)
             ->addOption('flavour', NegatedExportIgnoreAnalyser::EXPORT_IGNORE_NEGATED)
             ->addOption('align-export-ignores')
-            ->addOption('keep-readme')
             ->addOption('keep-license')
             ->execute()
             ->assertSuccessful();
@@ -207,7 +206,6 @@ CONTENT;
             ->addArgument($this->temporaryDirectory)
             ->addOption('flavour', NegatedExportIgnoreAnalyser::EXPORT_IGNORE_NEGATED)
             ->addOption('align-export-ignores')
-            ->addOption('keep-readme')
             ->execute()
             ->assertSuccessful();
 
@@ -350,7 +348,7 @@ CONTENT;
             '# This file was partly modified by the lean package validator (https://github.com/lean-packages/php-lean).',
             $content
         );
-        $this->assertStringContainsString('README.md', $content);
+        $this->assertStringNotContainsString('README.md', $content);
         $this->assertStringContainsString('.gitignore', $content);
         $this->assertStringContainsString('tests/', $content);
         $this->assertStringContainsString('export-ignore', $content);

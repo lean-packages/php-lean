@@ -51,7 +51,6 @@ final class PhpConfigLoader
      * - enforce-alignment: bool
      * - sort-from-directories-to-files: bool
      * - keep-license: bool
-     * - keep-readme: bool
      * - keep-glob-pattern: string
      * - align-export-ignores: bool
      *
@@ -82,7 +81,6 @@ final class PhpConfigLoader
             'enforce-alignment',
             'sort-from-directories-to-files',
             'keep-license',
-            'keep-readme',
             'keep-glob-pattern',
             'align-export-ignores',
         ];
@@ -108,7 +106,6 @@ final class PhpConfigLoader
             'enforce-alignment',
             'sort-from-directories-to-files',
             'keep-license',
-            'keep-readme',
             'align-export-ignores',
         ];
         foreach ($boolKeys as $key) {

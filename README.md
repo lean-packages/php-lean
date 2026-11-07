@@ -143,26 +143,36 @@ All commands support these common options and flags:
 | `--report-impact`              | Show distribution impact report (`lint`)                       |
 | `--report-stale-export-ignores`| Report export-ignores for non-existent files (`lint`)          |
 | `--keep-license`               | Allow license file in dist archive (`lint`)                    |
-| `--keep-readme`                | Allow README file in dist archive (`lint`)                     |
 | `--keep-glob-pattern <PATTERN>`| Keep matching files in dist archive (`lint`)                   |
 | `--stdin-input`                | Read `.gitattributes` content from STDIN (`lint`)              |
 | `--flavour <FLAVOUR>`          | Export-ignore flavour: `classic` or `negated` (`create`)       |
 
 ## Default artefact patterns
 
-By default, `php-lean` checks for these patterns (defined in the [PHP preset](./src/Presets/PhpPreset.php)):
+By default, `php-lean` checks for these glob patterns (defined in the [PHP preset](./src/Presets/PhpPreset.php)):
 
 ```
-.github/, .gitignore, .gitattributes, .gitmessage, .idea/, .vscode/,
-.editorconfig, .php-cs-fixer.php, .phpunit.result.cache,
-.phpunit.cache/, .aiassistant/,
-tests/, docs/, doc/,
-CHANGELOG.md, changelog.md, CONTRIBUTING.md, contributing.md,
-LICENSE.md, license.md, README.md, readme.md,
-composer.json, composer.lock,
-phpstan.neon.dist, phpunit.xml.dist, mago.toml, peck.json,
-.dockerignore, Dockerfile, docker-compose.yml, docker-compose.yaml
+.*                                    Dotfiles and directories (e.g., .github/, .idea/, .vscode/)
+*.txt                                 Text files
+*.{md,MD}                             Markdown files (except README — see below)
+*.rst                                 reStructuredText files
+*.toml                                TOML configuration files
+*.xml                                 XML files
+*.yml                                 YAML files
+*.dist.*                              Distribution config files
+*.lock                                Lock files (e.g., composer.lock)
+LICENSE                               Generic license file
+{D,d}oc*                              Documentation directories
+{T,t}est* / {S,s}pec*                Test and spec directories
+AGENT.md, AGENTS.md, CLAUDE.md, ...   AI assistant instruction files
+.aiassistant/, .cursor/, .claude/     AI assistant directories
+llms.txt, llms-full.txt               AI context files
+phpstan*, phpunit*, rector*, ...      PHP tooling configuration
+vendor*                               Vendor directories
 ```
+
+**Note:** `README.md` is always kept in the distribution archive by default and is excluded from the `*.{md,MD}` pattern.
+Other Markdown files like `CHANGELOG.md`, `CONTRIBUTING.md`, and `RELEASE.md` are still export-ignored.
 
 Override them with `--glob-pattern`:
 

@@ -70,7 +70,6 @@ final class LintCommandStdinOptionsTest extends TestCase
 
         $stdinContent = <<<GITATTR
 
-README.md export-ignore
 tests/ export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
@@ -102,7 +101,6 @@ GITATTR;
 
 .gitattributes export-ignore
 .gitignore export-ignore
-README.md export-ignore
 tests/ export-ignore
 
 GITATTR;
@@ -132,7 +130,6 @@ GITATTR;
 
 .gitattributes export-ignore
 .gitignore     export-ignore
-README.md      export-ignore
 tests/         export-ignore
 
 GITATTR;

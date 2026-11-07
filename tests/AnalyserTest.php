@@ -191,6 +191,7 @@ CONTENT;
 bin/ -export-ignore
 bin/lpv -export-ignore
 composer.json -export-ignore
+README.md -export-ignore
 resources/ -export-ignore
 resources/** -export-ignore
 src/ -export-ignore
@@ -279,6 +280,7 @@ bin/          -export-ignore
 bin/lpv       -export-ignore
 composer.json -export-ignore
 LICENSE.md    -export-ignore
+README.md     -export-ignore
 resources/    -export-ignore
 resources/**  -export-ignore
 src/          -export-ignore
@@ -422,7 +424,6 @@ CONTENT;
 .travis.yml export-ignore
 documentation/ export-ignore
 Makefile export-ignore
-README.md export-ignore
 
 CONTENT;
 
@@ -568,7 +569,6 @@ CONTENT;
 CONDUCT.md export-ignore
 documentation/ export-ignore
 phpspec.yml.dist export-ignore
-README.md export-ignore
 specs/ export-ignore
 CONTENT;
 
@@ -604,7 +604,6 @@ CONTENT;
 
 .gitattributes export-ignore
 .travis.yml export-ignore
-README.md export-ignore
 
 CONTENT;
 
@@ -708,7 +707,6 @@ CONTENT;
             '.travis.yml',
             'documentation/',
             'Makefile',
-            'README.md',
         ];
 
         $analyser = $this->getAnalyserInstance();
@@ -871,7 +869,6 @@ CONTENT;
 .gitattributes export-ignore
 .github/ export-ignore
 Makefile export-ignore
-README.md export-ignore
 tests/ export-ignore
 
 # Some content after
@@ -913,7 +910,6 @@ CONTENT;
 # Files to exclude from export
 specs/ export-ignore
 build.xml.dist export-ignore
-README.md export-ignore
 Makefile export-ignore
 phpspec.yml.dist export-ignore
 .gitattributes export-ignore
@@ -950,7 +946,6 @@ CONTENT;
 # Files to exclude from export
 specs/ export-ignore
 build.xml.dist export-ignore
-README.md export-ignore
 Makefile export-ignore
 phpspec.yml.dist export-ignore
 .gitattributes export-ignore
@@ -1002,7 +997,6 @@ CONTENT;
 .gitattributes export-ignore
 application-version-incrementor export-ignore
 phpspec.yml.dist export-ignore
-README.md export-ignore
 specs/ export-ignore
 
 # Other patterns
@@ -1093,7 +1087,6 @@ CONTENT;
 application-version-incrementor export-ignore
 changelog-generator export-ignore
 phpspec.yml.dist export-ignore
-README.md export-ignore
 specs/ export-ignore
 CONTENT;
 
@@ -1125,7 +1118,6 @@ CONTENT;
 
 .gitattributes export-ignore
 captainhook.json export-ignore
-README.md export-ignore
 
 CONTENT;
 
@@ -1327,7 +1319,6 @@ CONTENT;
 
 .gitattributes export-ignore
 humbug.json.dist export-ignore
-README.md export-ignore
 SUPPORT.md export-ignore
 
 CONTENT;
@@ -1365,7 +1356,6 @@ CONTENT;
 
 .gitattributes export-ignore
 phpspec.yml.dist export-ignore
-README.md export-ignore
 specs/ export-ignore
 
 CONTENT;
@@ -1402,7 +1392,6 @@ CONTENT;
 
 .gitattributes export-ignore
 phpspec.yml.dist export-ignore
-README.md export-ignore
 specs/ export-ignore
 
 CONTENT;
@@ -1446,7 +1435,7 @@ CONTENT;
 
         $analyser = $this->getAnalyserInstance();
 
-        $analyser->getActualExportIgnoreAnalyser()->setDirectory($this->temporaryDirectory)->keepReadme();
+        $analyser->getActualExportIgnoreAnalyser()->setDirectory($this->temporaryDirectory);
         $actualGitattributesContent = $analyser->getExpectedGitattributesContent($artifactFilenames);
 
         $this->assertTrue($analyser->getActualExportIgnoreAnalyser()->isKeepReadmeEnabled());
@@ -1514,7 +1503,6 @@ CONTENT;
 .gitattributes export-ignore
 LICENSE.md export-ignore
 phpunit.xml.dist export-ignore
-README.md export-ignore
 /specs export-ignore
 /docs/* export-ignore
 /tests export-ignore
@@ -1527,7 +1515,6 @@ CONTENT;
 docs/ export-ignore
 LICENSE.md export-ignore
 phpunit.xml.dist export-ignore
-README.md export-ignore
 specs/ export-ignore
 tests/ export-ignore
 CONTENT;
@@ -1563,7 +1550,6 @@ CONTENT;
 .gitattributes   export-ignore
 LICENSE.txt      export-ignore
 phpspec.yml.dist export-ignore
-README.md        export-ignore
 specs/           export-ignore
 
 CONTENT;
@@ -1602,7 +1588,6 @@ specs/ export-ignore
 .gitattributes export-ignore
 LICENSE.txt export-ignore
 phpspec.yml.dist export-ignore
-README.md export-ignore
 
 CONTENT;
 
@@ -1638,7 +1623,6 @@ CONTENT;
 /application-version-incrementor export-ignore
 /changelog-generator export-ignore
 phpspec.yml.dist export-ignore
-/README.md export-ignore
 specs/ export-ignore
 CONTENT;
 
@@ -1669,7 +1653,6 @@ CONTENT;
         $gitattributesContent = <<<CONTENT
 .gitattributes export-ignore
 phpspec.yml.dist export-ignore
-README.md export-ignore
 specs/ export-ignore
 CONTENT;
 
@@ -1702,7 +1685,6 @@ CONTENT;
 
 .gitattributes export-ignore
 phpspec.yml.dist export-ignore
-README.md export-ignore
 specs/ export-ignore
 CONTENT;
 
@@ -1894,6 +1876,7 @@ CONTENT;
             '*.txt',
             '*.xml',
             '*.yml',
+            '!({R,r}eadme*.{m,M}*)',
             '*.{md,MD}',
             '*.{png,gif,jpeg,jpg,webp}',
             '*debugbar.json',
@@ -1986,5 +1969,129 @@ CONTENT;
             $defaultGlobPattern,
             'extension.neon should not be export-ignored in the default glob patterns'
         );
+    }
+
+    #[Test]
+    public function classicModeExcludesNonReadmeLicenseMarkdownFiles(): void
+    {
+        $artifactFilenames = [
+            'README.md',
+            'LICENSE.md',
+            'RELEASE.md',
+            'CHANGELOG.md',
+            'CONTRIBUTING.md',
+            'composer.json',
+        ];
+
+        $this->createTemporaryFiles(
+            $artifactFilenames,
+            ['src', 'tests']
+        );
+
+        $analyser = $this->getAnalyserInstance();
+        $analyser->getActualExportIgnoreAnalyser()->setDirectory($this->temporaryDirectory);
+        $actualGitattributesContent = $analyser->getExpectedGitattributesContent($artifactFilenames);
+
+        // Verify README.md is NOT export-ignored (always kept by default)
+        $this->assertStringNotContainsString('README.md export-ignore', $actualGitattributesContent);
+        // Verify RELEASE.md IS export-ignored
+        $this->assertStringContainsString('RELEASE.md export-ignore', $actualGitattributesContent);
+        // Verify CHANGELOG.md IS export-ignored
+        $this->assertStringContainsString('CHANGELOG.md export-ignore', $actualGitattributesContent);
+        // Verify CONTRIBUTING.md IS export-ignored
+        $this->assertStringContainsString('CONTRIBUTING.md export-ignore', $actualGitattributesContent);
+    }
+
+    #[Test]
+    public function negatedModeExcludesNonReadmeLicenseMarkdownFiles(): void
+    {
+        $analyser = new Analyser(new NegatedExportIgnoreAnalyser(new Finder(new PhpPreset()), new GitattributesFileRepository($this->temporaryDirectory)));
+        $analyser->getActualExportIgnoreAnalyser()->keepLicense()->setDirectory($this->temporaryDirectory);
+
+        $artifactFilenames = [
+            'README.md',
+            'LICENSE.md',
+            'RELEASE.md',
+            'CHANGELOG.md',
+            'CONTRIBUTING.md',
+            'composer.json',
+        ];
+
+        $this->createTemporaryFiles(
+            $artifactFilenames,
+            ['src', 'tests']
+        );
+
+        $this->createTemporaryFilesInDirectory($this->temporaryDirectory . '/src', ['Fake.php']);
+        $this->createTemporaryFilesInDirectory($this->temporaryDirectory . '/tests', ['FakeTest.php']);
+
+        $negatedGitattributesContent = $analyser->getExpectedGitattributesContent(
+            [],
+            NegatedExportIgnoreAnalyser::EXPORT_IGNORE_NEGATED
+        );
+
+        // In negated mode, README.md and LICENSE.md should be in the -export-ignore list (kept)
+        $this->assertStringContainsString('README.md -export-ignore', $negatedGitattributesContent);
+        $this->assertStringContainsString('LICENSE.md -export-ignore', $negatedGitattributesContent);
+
+        // RELEASE.md, CHANGELOG.md, CONTRIBUTING.md should NOT be in the -export-ignore list
+        // (they are excluded by the `* export-ignore` default rule)
+        $this->assertStringNotContainsString('RELEASE.md -export-ignore', $negatedGitattributesContent);
+        $this->assertStringNotContainsString('CHANGELOG.md -export-ignore', $negatedGitattributesContent);
+        $this->assertStringNotContainsString('CONTRIBUTING.md -export-ignore', $negatedGitattributesContent);
+    }
+
+    #[Test]
+    public function classicModeExcludesReleaseMarkdownFile(): void
+    {
+        $artifactFilenames = [
+            'README.md',
+            'RELEASE.md',
+            'composer.json',
+        ];
+
+        $this->createTemporaryFiles(
+            $artifactFilenames,
+            ['src']
+        );
+
+        $analyser = $this->getAnalyserInstance();
+        $analyser->getActualExportIgnoreAnalyser()->setDirectory($this->temporaryDirectory);
+        $actualGitattributesContent = $analyser->getExpectedGitattributesContent($artifactFilenames);
+
+        // RELEASE.md should be export-ignored in classic mode
+        $this->assertStringContainsString('RELEASE.md export-ignore', $actualGitattributesContent);
+        // README.md should NOT be export-ignored
+        $this->assertStringNotContainsString('README.md export-ignore', $actualGitattributesContent);
+    }
+
+    #[Test]
+    public function negatedModeExcludesReleaseMarkdownFile(): void
+    {
+        $analyser = new Analyser(new NegatedExportIgnoreAnalyser(new Finder(new PhpPreset()), new GitattributesFileRepository($this->temporaryDirectory)));
+        $analyser->getActualExportIgnoreAnalyser()->setDirectory($this->temporaryDirectory);
+
+        $artifactFilenames = [
+            'README.md',
+            'RELEASE.md',
+            'composer.json',
+        ];
+
+        $this->createTemporaryFiles(
+            $artifactFilenames,
+            ['src']
+        );
+
+        $this->createTemporaryFilesInDirectory($this->temporaryDirectory . '/src', ['Fake.php']);
+
+        $negatedGitattributesContent = $analyser->getExpectedGitattributesContent(
+            [],
+            NegatedExportIgnoreAnalyser::EXPORT_IGNORE_NEGATED
+        );
+
+        // RELEASE.md should NOT appear in the -export-ignore list (excluded by default `* export-ignore`)
+        $this->assertStringNotContainsString('RELEASE.md -export-ignore', $negatedGitattributesContent);
+        // README.md should be in the -export-ignore list (kept)
+        $this->assertStringContainsString('README.md -export-ignore', $negatedGitattributesContent);
     }
 }

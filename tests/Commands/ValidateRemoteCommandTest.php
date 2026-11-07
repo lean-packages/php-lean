@@ -28,7 +28,6 @@ final class ValidateRemoteCommandTest extends TestCase
 .gitattributes export-ignore
 .gitignore export-ignore
 phpunit.xml.dist export-ignore
-README.md export-ignore
 tests/ export-ignore
 CONTENT;
 
@@ -371,7 +370,6 @@ CONTENT;
         TestCommand::for($this->getCommandInstance($this->getRepositoryFiles()))
             ->addArgument(self::REPOSITORY_URL)
             ->addOption('clone-directory', $this->cloneDirectory)
-            ->addOption('keep-readme')
             ->execute()
             ->assertSuccessful();
 

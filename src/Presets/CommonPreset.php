@@ -40,6 +40,7 @@ class CommonPreset
         return \array_merge($this->aiGlob, [
             '.*',
             '*.txt',
+            '!({R,r}eadme*.{m,M}*)',
             '*.{md,MD}',
             '*.rst',
             '*.toml',

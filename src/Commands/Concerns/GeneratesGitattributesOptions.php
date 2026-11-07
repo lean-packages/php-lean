@@ -34,8 +34,7 @@ trait GeneratesGitattributesOptions
 
         // Keep rules
         $addOption('keep-license', null, InputOption::VALUE_NONE, 'Do not export-ignore the license file');
-        $addOption('keep-readme', null, InputOption::VALUE_NONE, 'Do not export-ignore the README file');
-        $addOption('keep-glob-pattern', null, InputOption::VALUE_REQUIRED, 'Do not export-ignore matching glob pattern e.g. {LICENSE.*,README.*,docs*}');
+        $addOption('keep-glob-pattern', null, InputOption::VALUE_REQUIRED, 'Do not export-ignore matching glob pattern e.g. {LICENSE.*,docs*}');
 
         // Layout/ordering
         $addOption('align-export-ignores', 'a', InputOption::VALUE_NONE, 'Align export-ignores on create or overwrite');
@@ -53,7 +52,6 @@ trait GeneratesGitattributesOptions
         $chosenPreset = (string) $input->getOption('preset');
 
         $keepLicense = (bool) $input->getOption('keep-license');
-        $keepReadme = (bool) $input->getOption('keep-readme');
         $keepGlobPattern = (string) ($input->getOption('keep-glob-pattern') ?? '');
 
         $alignExportIgnores = false;
@@ -83,9 +81,8 @@ trait GeneratesGitattributesOptions
             $output->writeln('+ Keeping the license file. (MIT license auto-detected)', OutputInterface::VERBOSITY_VERBOSE);
         }
 
-        if ($keepReadme) {
+        if ($analyser->isKeepReadmeEnabled()) {
             $output->writeln('+ Keeping the README file.', OutputInterface::VERBOSITY_VERBOSE);
-            $analyser->keepReadme();
         }
 
         if ($keepGlobPattern !== '') {

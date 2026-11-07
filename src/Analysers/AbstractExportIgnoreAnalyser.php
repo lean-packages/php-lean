@@ -126,14 +126,6 @@ abstract class AbstractExportIgnoreAnalyser
     protected bool $keepLicense = false;
 
     /**
-     * Whether to exclude a README file from the export-ignores
-     * or not.
-     *
-     * @var boolean
-     */
-    protected bool $keepReadme = false;
-
-    /**
      * Pattern to exclude from the export-ignores.
      *
      * @var string
@@ -181,7 +173,6 @@ abstract class AbstractExportIgnoreAnalyser
         $this->sortFromDirectoriesToFiles = $configuration->sortFromDirectoriesToFiles;
         $this->sortAlphabetically = $configuration->sortAlphabetically;
         $this->keepLicense = $configuration->keepLicense;
-        $this->keepReadme = $configuration->keepReadme;
         $this->keepGlobPattern = $configuration->keepGlobPattern;
         $this->alignExportIgnores = $configuration->alignExportIgnores;
     }
@@ -374,26 +365,14 @@ abstract class AbstractExportIgnoreAnalyser
     }
 
     /**
-     * Keep README file in releases.
-     *
-     * @return AbstractExportIgnoreAnalyser
-     */
-    public function keepReadme(): self
-    {
-        $this->keepReadme = true;
-        $this->configuration = $this->configuration->keepReadme(true);
-
-        return $this;
-    }
-
-    /**
      * Guard for not export-ignoring README file.
+     * README.md is always kept by default.
      *
      * @return boolean
      */
     public function isKeepReadmeEnabled(): bool
     {
-        return $this->keepReadme === true;
+        return true;
     }
 
     /**
