@@ -38,50 +38,11 @@
             "Stolt\\LeanPackage\\": "src/"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "Stolt\\LeanPackage\\Tests\\": "tests/"
-        }
-    },
     "type": "library",
     "minimum-stability": "stable",
     "bin": [
         "bin/php-lean"
     ],
-    "scripts-descriptions": {
-        "test": "Runs all tests.",
-        "test-with-coverage": "Runs all tests and measures code coverage.",
-        "cs-fix": "Fixes coding standard violations.",
-        "cs-lint": "Checks for coding standard violations.",
-        "configure-commit-template": "Configures a local commit message template.",
-        "application-version-guard": "Checks that the application version matches the given Git tag.",
-        "static-analyse": "Runs a static code analysis via PHPStan.",
-        "dependency-analyse": "Runs a dependency analysis to find shadowed dependencies.",
-        "validate-gitattributes": "Checks the leanness of this package.",
-        "pre-commit-check": "Does a final (aggregated) check before committing."
-    },
-    "scripts": {
-        "test": "phpunit",
-        "test-with-coverage": "export XDEBUG_MODE=coverage && phpunit --coverage-html coverage-reports",
-        "cs-fix-classic": "php-cs-fixer --allow-risky=yes fix . -vv || true",
-        "cs-fix": "mago lint --fix",
-        "cs-lint": "mago lint",
-        "configure-commit-template": "git config --add commit.template .gitmessage",
-        "application-version-guard": "php bin/application-version --verify-tag-match",
-        "static-analyse": "phpstan analyse --configuration phpstan.neon.dist --memory-limit=512M",
-        "validate-gitattributes": "bin/php-lean lint",
-        "version-check": "version-aligner check",
-        "spell-check": "./vendor/bin/peck",
-        "dependency-analyse": "./vendor/bin/composer-dependency-analyser",
-        "pre-commit-check": [
-            "@test",
-            "@cs-lint",
-            "@static-analyse",
-            "@dependency-analyse",
-            "@spell-check",
-            "@version-check"
-        ]
-    },
     "config": {
         "preferred-install": "dist",
         "sort-packages": true,
@@ -89,22 +50,5 @@
         "allow-plugins": {
             "carthage-software/mago": true
         }
-    },
-    "require-dev": {
-        "carthage-software/mago": "^1.18.0",
-        "dg/bypass-finals": "^1.9",
-        "friendsofphp/php-cs-fixer": "^3.95",
-        "laravel/pao": "^1.0",
-        "mockery/mockery": "^1.0",
-        "peckphp/peck": "^0.3",
-        "phlak/semver": "^4.1 || ^6.0",
-        "php-mock/php-mock": "^2.6",
-        "php-mock/php-mock-phpunit": "^2.7||^1.1",
-        "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^13.0||^12.0||^11.4.4||^10.5.25",
-        "shipmonk/composer-dependency-analyser": "^1.8",
-        "stolt/composer-peel": "^4.1",
-        "stolt/version-aligner": "^1.1",
-        "zenstruck/console-test": "^1.7"
     }
 }

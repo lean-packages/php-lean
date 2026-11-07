@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-11-07
+
 ### Changed
 
 - __README.md is now always kept__ in distribution archives by default. The `--keep-readme` option has been removed, as 
