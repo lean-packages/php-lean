@@ -41,9 +41,9 @@ final class ApplicationTest extends PHPUnit
             'Expected init command not listed.'
         );
         $this->assertStringContainsString(
-            'validate',
+            'lint',
             \implode('', $output),
-            'Expected validate command not listed.'
+            'Expected lint command not listed.'
         );
         $this->assertEquals(Command::SUCCESS, $returnValue);
     }

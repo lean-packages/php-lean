@@ -31,8 +31,8 @@ use Stolt\LeanPackage\Commands\InitCommand;
 use Stolt\LeanPackage\Commands\ReformatCommand;
 use Stolt\LeanPackage\Commands\RefreshCommand;
 use Stolt\LeanPackage\Commands\TreeCommand;
+use Stolt\LeanPackage\Commands\LintCommand;
 use Stolt\LeanPackage\Commands\UpdateCommand;
-use Stolt\LeanPackage\Commands\ValidateCommand;
 use Stolt\LeanPackage\Commands\ValidateRemoteCommand;
 use Stolt\LeanPackage\Analyser;
 use Stolt\LeanPackage\Archive;
@@ -59,7 +59,7 @@ $refreshCommand = new RefreshCommand(
     $analyser
 );
 
-$validateCommand = new ValidateCommand(
+$lintCommand = new LintCommand(
     $analyser,
     new Validator($archive),
     new PhpInputReader(),
@@ -78,7 +78,7 @@ $application = new Application('Lean package validator', VERSION);
 $application->addCommands([
     $initCommand,
     $refreshCommand,
-    $validateCommand,
+    $lintCommand,
     $validateRemoteCommand,
     $createCommand,
     $updateCommand,

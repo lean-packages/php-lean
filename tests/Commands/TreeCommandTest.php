@@ -105,7 +105,7 @@ class TreeCommandTest extends TestCase
             'directory' => '.'
         ]);
 
-        $this->assertStringContainsString('3 directories, 2 files', $commandTester->getDisplay());
+        $this->assertStringContainsString('3 directories, 3 files', $commandTester->getDisplay());
         $this->assertStringContainsString('Package: stolt/php-lean', $commandTester->getDisplay());
         $commandTester->assertCommandIsSuccessful();
     }

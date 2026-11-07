@@ -75,13 +75,13 @@ CONTENT;
 
 * export-ignore
 
-composer.json              -export-ignore
-bin/                       -export-ignore
-bin/php-lean -export-ignore
-resources/                 -export-ignore
-resources/**               -export-ignore
-src/                       -export-ignore
-src/**                     -export-ignore
+composer.json -export-ignore
+bin/          -export-ignore
+bin/php-lean  -export-ignore
+resources/    -export-ignore
+resources/**  -export-ignore
+src/          -export-ignore
+src/**        -export-ignore
 CONTENT;
 
         $this->assertSame(\trim($expectedGitattributesContent), \trim($result->output()));

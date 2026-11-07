@@ -75,11 +75,15 @@ class CommonPreset
             return '<comment>' . $preset . '</comment>';
         }, $presets);
 
-        if (\count($presets)  > 2) {
+        if (\count($presets) > 2) {
             $lastPreset = \array_pop($presets);
             return \implode(', ', $presets) . ', and ' . $lastPreset;
         }
 
-        return $presets[0] . ' and ' . $presets[1];
+        if (\count($presets) === 2) {
+            return $presets[0] . ' and ' . $presets[1];
+        }
+
+        return $presets[0] ?? '';
     }
 }

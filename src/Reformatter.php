@@ -29,10 +29,11 @@ final class Reformatter
                 continue;
             }
 
-            [$pattern] = \explode('export-ignore', $line, 2);
-
+            $pattern = '';
             if ($analyser->isNegatedExportIgnoreLine($line)) {
                 [$pattern] = \explode('-export-ignore', $line, 2);
+            } else {
+                [$pattern] = \explode('export-ignore', $line, 2);
             }
 
             $exportIgnorePatterns[] = \rtrim($pattern);
