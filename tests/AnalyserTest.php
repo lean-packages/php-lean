@@ -205,6 +205,37 @@ CONTENT;
     }
 
     #[Test]
+    public function returnsExpectedClassicGitattributesContentKeepingPhastTomlButIgnoringOtherTomlFiles(): void
+    {
+        $this->createTemporaryFiles(['phast.toml', 'mago.toml']);
+
+        $analyser = $this->getAnalyserInstance();
+        $analyser->getActualExportIgnoreAnalyser()->setDirectory($this->temporaryDirectory);
+
+        $gitattributesContent = $analyser->getExpectedGitattributesContent();
+
+        $this->assertStringContainsString('mago.toml export-ignore', $gitattributesContent);
+        $this->assertStringNotContainsString('phast.toml export-ignore', $gitattributesContent);
+    }
+
+    #[Test]
+    public function returnsExpectedNegatedGitattributesContentKeepingPhastTomlButIgnoringOtherTomlFiles(): void
+    {
+        $this->createTemporaryFiles(['phast.toml', 'mago.toml']);
+
+        $analyser = $this->getAnalyserInstance();
+        $analyser->getActualExportIgnoreAnalyser()->setDirectory($this->temporaryDirectory);
+
+        $gitattributesContent = $analyser->getExpectedGitattributesContent(
+            [],
+            NegatedExportIgnoreAnalyser::EXPORT_IGNORE_NEGATED
+        );
+
+        $this->assertStringContainsString('phast.toml -export-ignore', $gitattributesContent);
+        $this->assertStringNotContainsString('mago.toml -export-ignore', $gitattributesContent);
+    }
+
+    #[Test]
     public function returnsExpectedNegatedGitattributesContentWhenSrcDirectoryHasOnlyOneFile(): void
     {
         $analyser = $this->getAnalyserInstance();
@@ -1877,6 +1908,7 @@ CONTENT;
             '*.xml',
             '*.yml',
             '!({R,r}eadme*.{m,M}*)',
+            '!(phast.toml)',
             '*.{md,MD}',
             '*.{png,gif,jpeg,jpg,webp}',
             '*debugbar.json',

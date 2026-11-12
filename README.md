@@ -156,7 +156,7 @@ By default, `php-lean` checks for these glob patterns (defined in the [PHP prese
 *.txt                                 Text files
 *.{md,MD}                             Markdown files (except README — see below)
 *.rst                                 reStructuredText files
-*.toml                                TOML configuration files
+*.toml                                TOML configuration files (except phast.toml)
 *.xml                                 XML files
 *.yml                                 YAML files
 *.dist.*                              Distribution config files
@@ -173,6 +173,7 @@ vendor*                               Vendor directories
 
 **Note:** `README.md` is always kept in the distribution archive by default and is excluded from the `*.{md,MD}` pattern.
 Other Markdown files like `CHANGELOG.md`, `CONTRIBUTING.md`, and `RELEASE.md` are still export-ignored.
+Similarly, `phast.toml` is excluded from the `*.toml` pattern and kept in the distribution archive.
 
 Override them with `--glob-pattern`:
 

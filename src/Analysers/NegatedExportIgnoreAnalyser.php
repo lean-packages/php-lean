@@ -27,6 +27,10 @@ final class NegatedExportIgnoreAnalyser extends AbstractExportIgnoreAnalyser
 
         $globMatches = \array_values(
             \array_filter($globMatches, function (string $fileToIgnore): bool {
+                if ($fileToIgnore === 'phast.toml') {
+                    return false;
+                }
+
                 if ($this->isKeepLicenseEnabled() && \preg_match('/(License.*)/i', $fileToIgnore)) {
                     return false;
                 }

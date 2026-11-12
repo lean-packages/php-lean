@@ -40,6 +40,10 @@ final class ClassicExportIgnoreAnalyser extends AbstractExportIgnoreAnalyser
                 continue;
             }
 
+            if ($filename === 'phast.toml') {
+                continue;
+            }
+
             if (\is_dir($filename)) {
                 $expectedExportIgnores[] = $filename . '/';
                 continue;
@@ -194,7 +198,10 @@ final class ClassicExportIgnoreAnalyser extends AbstractExportIgnoreAnalyser
             $postfixLessExportIgnores = [];
         }
 
-        $postfixLessExportIgnores = \array_unique(\array_merge($collectExpectedExportIgnores, $postfixLessExportIgnores));
+        $postfixLessExportIgnores = \array_filter(
+            \array_unique(\array_merge($collectExpectedExportIgnores, $postfixLessExportIgnores)),
+            static fn (string $exportIgnore): bool => $exportIgnore !== 'phast.toml'
+        );
 
         \sort($postfixLessExportIgnores, SORT_STRING | SORT_FLAG_CASE);
 

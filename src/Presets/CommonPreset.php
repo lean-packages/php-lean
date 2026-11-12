@@ -44,6 +44,7 @@ class CommonPreset
             '*.{md,MD}',
             '*.rst',
             '*.toml',
+            '!(phast.toml)',
             '*.xml',
             '*.yml',
             '*.dist.*',
