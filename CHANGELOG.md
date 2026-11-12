@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/) and this p
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-11-12
+
 ### Added
 
 - `phast.toml` is now included in distribution archives when present, while other TOML files remain export-ignored by default.
