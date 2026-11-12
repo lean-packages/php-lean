@@ -292,3 +292,4 @@ All noteworthy changes are documented in the [CHANGELOG.md](CHANGELOG.md).
 - [cargo-lean](https://github.com/lean-packages/cargo-lean) — The `Rust` equivalent.
 - [py-lean](https://github.com/lean-packages/py-lean) — The `Python` equivalent.
 - [js-lean](https://github.com/lean-packages/js-lean) — The `JavaScript` equivalent.
+- [zig-lean](https://github.com/lean-packages/zig-lean) — The `Zig` equivalent.
