@@ -228,7 +228,7 @@ See the [action documentation](.github/actions/lint/README.md) for more details.
 
 ### cpx
 
-Run the validator ad-hoc via [cpx](https://cpx.dev/):
+Run the validator ad-hoc via [cpx](https://github.com/laravel/cpx):
 
 ```bash
 cpx stolt/php-lean lint
