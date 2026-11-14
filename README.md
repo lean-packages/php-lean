@@ -290,7 +290,7 @@ All noteworthy changes are documented in the [CHANGELOG.md](CHANGELOG.md).
 
 ## Related projects
 
-- [cargo-lean](https://github.com/lean-packages/cargo-lean) — The `Rust` equivalent.
-- [py-lean](https://github.com/lean-packages/py-lean) — The `Python` equivalent.
-- [js-lean](https://github.com/lean-packages/js-lean) — The `JavaScript` equivalent.
-- [zig-lean](https://github.com/lean-packages/zig-lean) — The `Zig` equivalent.
+This project is part of the [lean-packages](https://github.com/lean-packages) ecosystem, a collection of tools for validating and 
+optimizing software package distributions across programming languages.
+
+Explore the [lean-packages GitHub organization](https://github.com/lean-packages) to discover other tools in the ecosystem.
