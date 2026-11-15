@@ -1,6 +1,6 @@
 # Lean Package Validator
 
-A PHP CLI tool that validates whether a project's `.gitattributes` file is correctly configured to exclude development 
+A PHP CLI tool that validates whether a project's `.gitattributes` file is correctly configured to exclude development
 artifacts from release archives.
 
 ## Tech Stack
@@ -28,6 +28,9 @@ composer cs-lint
 
 # Static analysis
 composer static-analyse
+
+# Architecture analysis
+composer architecture-analyse
 
 # All pre-commit checks
 composer pre-commit-check
