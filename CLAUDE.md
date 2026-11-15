@@ -9,6 +9,7 @@ artifacts from release archives.
 - **Symfony Console** for the CLI framework
 - **PHPUnit 11** for testing
 - **PHPStan level 8** for static analysis
+- **StructArmed** for architecture analysis
 - **Mago** (PSR-2/PSR-12) for code style
 
 ## Contribution commands
