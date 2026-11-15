@@ -72,7 +72,7 @@ abstract class Glob
 
         $matches = [];
         foreach ($patternParts as $patternPart) {
-            $matches[] = \array_filter($array, function ($value) use ($patternPart, $flags) {
+            $matches[] = \array_filter($array, static function ($value) use ($patternPart, $flags) {
                 return \fnmatch($patternPart, $value, $flags);
             });
         }

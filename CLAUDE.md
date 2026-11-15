@@ -1,6 +1,6 @@
 # Lean Package Validator
 
-A PHP CLI tool that validates whether a project's `.gitattributes` file is correctly configured to exclude development 
+A PHP CLI tool that validates whether a project's `.gitattributes` file is correctly configured to exclude development
 artifacts from release archives.
 
 ## Tech Stack
@@ -9,6 +9,7 @@ artifacts from release archives.
 - **Symfony Console** for the CLI framework
 - **PHPUnit 11** for testing
 - **PHPStan level 8** for static analysis
+- **StructArmed** for architecture analysis
 - **Mago** (PSR-2/PSR-12) for code style
 
 ## Contribution commands
@@ -28,6 +29,9 @@ composer cs-lint
 
 # Static analysis
 composer static-analyse
+
+# Architecture analysis
+composer architecture-analyse
 
 # All pre-commit checks
 composer pre-commit-check

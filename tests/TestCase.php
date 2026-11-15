@@ -14,7 +14,7 @@ use Stolt\LeanPackage\Helpers\Str as OsHelper;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 
-class TestCase extends PHPUnit
+abstract class TestCase extends PHPUnit
 {
     /**
      * @var Application
